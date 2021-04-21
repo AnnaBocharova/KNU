@@ -1,7 +1,11 @@
 ﻿#include<iostream>
+#include <functional>
+using std::function;
 using namespace std;
 const int VERTIX = 5;
 const int SIZE = 25;
+
+
 struct ElementMatrix {
 	int data;
 	int i, j;
@@ -16,18 +20,16 @@ struct Vertix {
 	int sum_lenght = 0;
 };
 struct Edges {
-	int start;
-	int x1 = 0, y1 = 0;
-	int end;
-	int x2 = 0, y2 = 0;
+	int start, x1 = 0, y1 = 0;
+	int end, x2 = 0, y2 = 0;
 	int lenght = 0;
-	double x_middle = 0;
-	double y_middle = 0;
+	double x_middle;
+	double y_middle;
 };
 struct Cycle {
-	int vertix1, x1, y1,
-		vertix2, x2, y2,
-		vertix3, x3, y3;
+	int vertix1, edge1,
+		vertix2, edge2,
+		vertix3, edge3;
 };
 struct Matrix {
 	ElementMatrix* head = nullptr;
@@ -163,16 +165,12 @@ void quick_sort(Edges(&edges) [SIZE], int first, int last) {
 }
 
 
-bool function_of_coordinates2(Edges edge1, Edges edge2) {
-	if (sqrt(pow(edge1.x_middle, 2) + pow(edge1.y_middle, 2)) <= sqrt(pow(edge2.x_middle, 2) + pow(edge2.y_middle, 2)))
-		return true;
-	return false;
-}
+
 
 //слиянием 
-
 void merge(Edges arr[], int l, int m, int r)
 {
+	function<bool(Edges, Edges)> funct;
 	int n1 = m - l + 1;
 	int n2 = r - m;
 
@@ -187,7 +185,7 @@ void merge(Edges arr[], int l, int m, int r)
 	
 	int i = 0, j = 0, k = l;
 	while (i < n1 && j < n2) {
-		if (function_of_coordinates2(L[i], R[j])) {
+		if (funct(L[i], R[j])) {
 			arr[k] = L[i];
 			i++;
 		}
@@ -209,69 +207,44 @@ void merge(Edges arr[], int l, int m, int r)
 		j++;
 		k++;
 	}
+	delete L, delete R;
 }
 
 void merge_sort(Edges(&edges)[SIZE], int l, int r) {
-	if (l >= r) {
-		return;
+	if (l < r) {
+		int m = (l +r)/ 2;
+		merge_sort(edges, l, m);
+		merge_sort(edges, m + 1, r);
+		merge(edges, l, m, r);
 	}
-	int m = l + (r - l) / 2;
-	merge_sort(edges, l, m);
-	merge_sort(edges, m + 1, r);
-	merge(edges, l, m, r);
 }
 
 
-//void merge(Edges(&edges) [SIZE], int start, int end) {
-//	int i = start,
-//		temp = 0,
-//		middle = start + (end - start) / 2,
-//		j = middle + 1;
-//	Edges array[SIZE];
-//	while (i <= middle && j <= end) {
-//		if (function_of_coordinates2(edges[i], edges[j])) {
-//			array[temp] = edges[i];
-//			i++;
-//		}
-//		else {
-//			array[temp] = edges[j];
-//			j++;
-//		}
-//		temp++;
-//	}
-//
-//	while (i <=middle) {
-//		array[temp] = edges[i];
-//		i++;
-//		temp++;
-//	}
-//	while (j <= end) {
-//		array[temp] = edges[j];
-//		j++;
-//		temp++;
-//	}
-//	for (int i = 0; i < temp; i++) {
-//		edges[start + i] = array[i];
-//	}
-//
-//
-//}
-//
-//void merge_sort(Edges(&edges) [SIZE], int left, int right ) {
-//	if (left < right) {
-//		if (right - left == 1) {
-//			if (function_of_coordinates2(edges[left], edges[right])) {
-//				swap(edges[left], edges[right]);
-//			}
-//		}
-//		else {
-//			merge_sort(edges, left, left + (right - left) / 2);
-//			merge_sort(edges, left + (right - left) / 2 + 1, right);
-//			merge(edges, left, right);
-//		}
-//	}
-//}
-
+double area(const int&a, const int&b, const int &c) {
+	double p = (a + b + c) / 2;
+	if (p * (p - a) * (p - b) * (p - c) < 0)
+		return 0;
+	else
+		return sqrt(p * (p - a) * (p - b) * (p - c));
+}
+void shell_sort(Cycle array[], int size)
+{
+	int d = size / 2;
+	while (d > 0)
+	{
+		for (int i = 0; i < size - d; i++)
+		{
+			int j = i;
+			while (j >= 0 && area(array[j].edge1, array[j].edge2, array[j].edge2)< area(array[j+d].edge1, array[j+d].edge2, array[j+d].edge2))
+			{
+				swap(array[j], array[j + d]);
+				j--;
+			}
+		}
+		d = d / 2;
+	}
+	
+}
 
 void create_matrix(Matrix (&matrix)[VERTIX]) {
 	FILE* graph;
@@ -369,13 +342,80 @@ void print_array_edges(Edges array[SIZE], int check) {
 	}
 	cout << endl;
 }
+void print_edges(Edges array[SIZE], int check) {
+	if (check == 1) {
+		for (int i = 0; i < SIZE && array[i].lenght != INT_MAX && array[i].start!=array[i].end; i++) {
+			cout << array[i].start + 1 << "-" << array[i].end + 1 << endl;
+		}
+	}
+	else if (check == 2) {
+		for (int i = SIZE - 1; i >= 0 && array[i].lenght != INT_MAX && array[i].start != array[i].end; i--) {
+			cout << array[i].start + 1 << "-" << array[i].end + 1 << endl;
+		}
+	}
+	else {
+		cout << "Incorrect input!";
+	}
+	cout << endl;
+}
+
+void create_cycle(Matrix matrix_graph[], Cycle(&result)[SIZE], int &counter) {
+	int mygraph[VERTIX][VERTIX];
+	for (int i = 0; i < VERTIX; i++) {
+		for (int j = 0; j < VERTIX; j++) {
+			mygraph[i][j] = matrix_graph[i].lenght_edges(j);
+		}
+	}
+
+	for (int i = 0; i < VERTIX; i++) {
+		for (int j = i + 1; j < VERTIX; j++) {
+			if (mygraph[i][j] != INT_MAX) {
+				for (int k = j + 1; k < VERTIX; k++) {
+					if (mygraph[j][k] != INT_MAX && mygraph[k][i] != INT_MAX) {
+						result[counter].vertix1 = i;
+						result[counter].vertix2 = j;
+						result[counter].vertix3 = k;
+						result[counter].edge1 = mygraph[i][j];
+						result[counter].edge2 = mygraph[j][k];
+						result[counter].edge3 = mygraph[k][i];
+						counter++;
+					}
+				}
+			}
+		}
+	}
+}
+
+void crete_array_edge(Vertix number_edges[], Matrix matrix_graph[], Edges(&alledges)[SIZE]) {
+	int vertix = 0,  counter1 = 0, i = 0;
+	for (int j = 0; j < SIZE; j++) {
+		vertix = 0;
+		alledges[j].start = i;
+		alledges[j].end = vertix + counter1;
+		alledges[j].x1 = number_edges[i].x;
+		alledges[j].y1 = number_edges[i].y;
+		alledges[j].x2 = number_edges[vertix + counter1].x;
+		alledges[j].y2 = number_edges[vertix + counter1].y;
+		alledges[j].x_middle = (alledges[j].x1 + alledges[j].x2) / 2;
+		alledges[j].y_middle = (alledges[j].y1 + alledges[j].y2) / 2;
+		alledges[j].lenght = matrix_graph[i].lenght_edges(vertix + counter1);
+		counter1++;
+
+		if (j % 5 == 4) {
+			i += 1;
+			counter1 = 0;
+		}
+	}
+
+}
+
 int main() {
 	FILE* graph;
 	if (fopen_s(&graph, "graph.dat", "wb")) {
 		perror("File isn`t open!");
 	}
 	else {
-		for (int i = 0; i < pow(VERTIX,2); i++) {
+		for (int i = 0; i < pow(VERTIX, 2); i++) {
 			int value = rand() % 4;
 			fwrite(&value, sizeof(int), 1, graph);
 		}
@@ -384,80 +424,34 @@ int main() {
 
 	Matrix matrix_graph[VERTIX];
 	create_matrix(matrix_graph);
-	int x=0, y=0;
+	int x = 0, y = 0;
 	Vertix number_edges[VERTIX];
-	
+
 	for (int i = 0; i < VERTIX; i++) {
-		number_edges[i].vertix=i;
+		number_edges[i].vertix = i;
 		x = -10 + rand() % 20;
-		 y = -10 + rand() % 20;
+		y = -10 + rand() % 20;
 		number_edges[i].x = x;
 		number_edges[i].y = y;
 		matrix_graph[i].edges_number(number_edges[i].counter_edges);
 		matrix_graph[i].sum_lenght_edges(number_edges[i].sum_lenght);
 	}
+
 	
-	Edges alledges[SIZE];
-	int counter1=0, i=0,  vertix;
+	
 	print_matrix(matrix_graph);
 	for (int i = 0; i < VERTIX; i++) {
 		cout << number_edges[i].vertix + 1 << "  ("
 			<< number_edges[i].x << ", "
 			<< number_edges[i].y << ")" << endl;
 	}
-
-	for (int j = 0; j < SIZE; j++) {
-		vertix = 0;
-		alledges[j].start = i;
-		alledges[j].end = vertix + counter1;
-		alledges[j].x1 = number_edges[i].x;
-		alledges[j].y1 = number_edges[i].y;
-		alledges[j].x2 = number_edges[vertix  + counter1].x;
-		alledges[j].y2 = number_edges[vertix + counter1].y;
-		alledges[j].x_middle = (alledges[j].x1 + alledges[j].x2) / 2;
-		alledges[j].y_middle = (alledges[j].y1 + alledges[j].y2) / 2;
-		alledges[j].lenght = matrix_graph[i].lenght_edges(vertix + counter1);
-		counter1++;
-			
-		if (j % 5 == 4) {
-			i += 1;
-			counter1 = 0;
-		}
-	}
-	Cycle cycle3[SIZE];
-	int j = 0;
-	int counter = 0;
-	for (int i = 0; i < SIZE; i++) {
-		Edges temp1;
-		Edges temp2;
-		if (alledges[i].lenght != INT_MAX) {
-			temp1 = alledges[i];
-			int end1 = temp1.end;
-			if (end1 != 0) {
-				if (alledges[VERTIX * (end1 - 1)].lenght != INT_MAX) {
-					temp2 = alledges[VERTIX * (end1 - 1) - 1];
-					int end = temp2.end;
-					if (end == 0) end = 1;
-					for (int k = 0; k < VERTIX; k++) {
-						if (alledges[VERTIX * (end - 1) - 1 + k].end == temp1.start) {
-							cycle3[counter].vertix1 = temp1.start;
-							cycle3[counter].x1 = temp1.x1;
-							cycle3[counter].y1 = temp1.y1;
-							cycle3[counter].vertix2 = temp2.start;
-							cycle3[counter].x2 = temp2.x1;
-							cycle3[counter].y2 = temp2.y1;
-							cycle3[counter].vertix3 = temp2.end;
-							cycle3[counter].x3 = temp2.x2;
-							cycle3[counter].y3 = temp2.y2;
-							counter++;
-						}
-					}
-				}
-			}
-			
-		}
-	}
+	Edges alledges[SIZE];
+	crete_array_edge(number_edges, matrix_graph, alledges);
 	
+	
+	Cycle result[SIZE];
+	int counter = 0;
+	create_cycle(matrix_graph, result, counter);
 	bool check = true;
 	while (check) {
 		int sort, sort_check;
@@ -480,9 +474,11 @@ int main() {
 		{
 		case 1:
 			insertion_sort(number_edges);
+			print_array(number_edges, sort_check);
 			break;
 		case 2:
 			bubble_sort(number_edges);
+			print_array(number_edges, sort_check);
 			break;
 		case 3:
 			for (int i = 0; i < VERTIX; i++) {
@@ -499,11 +495,14 @@ int main() {
 			break;
 		case 5:
 			merge_sort(alledges,0, SIZE-1);
-			print_array_edges(alledges, sort_check);
+			print_edges(alledges, sort_check);
 			break;
-		/*case 6:
-			shell_sort();
-			break;*/
+		case 6:
+			shell_sort(result, counter);
+			for (int i = 0; i < counter; i++) {
+				cout << result[i].vertix1+1 << "->" << result[i].vertix2+1 << "->" << result[i].vertix3+1 << endl;
+			}
+			break;
 		default:
 			cout << "Function number entered incorrectly!";
 			break;
@@ -517,7 +516,6 @@ int main() {
 	}
 	
 	}
-
 
 
 
